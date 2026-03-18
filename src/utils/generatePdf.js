@@ -1,13 +1,21 @@
 import html2pdf from 'html2pdf.js';
 import { format } from 'date-fns';
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+const CURRENCY_SYMBOLS = { USD: '$', CAD: 'C$', CRC: '₡' };
+
+function formatAmount(amount, currency = 'USD') {
+  const symbol = CURRENCY_SYMBOLS[currency] || '$';
+  return `${symbol}${Number(amount).toFixed(2)}`;
 }
 
 export async function generatePdf(data) {
   const { expenses, documents, writeup, claimInfo } = data;
-  const totalAmount = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totals = expenses.reduce((acc, e) => {
+    const cur = e.currency || 'USD';
+    acc[cur] = (acc[cur] || 0) + Number(e.amount);
+    return acc;
+  }, {});
+  const totalLine = Object.entries(totals).map(([cur, amt]) => formatAmount(amt, cur)).join(' + ');
   const today = format(new Date(), 'MMMM d, yyyy');
 
   const html = `
@@ -54,12 +62,12 @@ export async function generatePdf(data) {
                 <td style="padding: 10px 12px; font-size: 13px;">${e.date}</td>
                 <td style="padding: 10px 12px; font-size: 13px;">${e.category}</td>
                 <td style="padding: 10px 12px; font-size: 13px;">${e.description}</td>
-                <td style="padding: 10px 12px; text-align: right; font-size: 13px;">${formatCurrency(e.amount)}</td>
+                <td style="padding: 10px 12px; text-align: right; font-size: 13px;">${formatAmount(e.amount, e.currency)}</td>
               </tr>
             `).join('')}
             <tr style="background: #1e3a5f; color: white; font-weight: 700;">
               <td colspan="3" style="padding: 12px; font-size: 14px;">TOTAL</td>
-              <td style="padding: 12px; text-align: right; font-size: 14px;">${formatCurrency(totalAmount)}</td>
+              <td style="padding: 12px; text-align: right; font-size: 14px;">${totalLine}</td>
             </tr>
           </tbody>
         </table>
@@ -70,7 +78,7 @@ export async function generatePdf(data) {
         <h2 style="font-size: 18px; color: #1e3a5f; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">Receipts</h2>
         ${expenses.filter(e => e.receipt).map(e => `
           <div style="margin-bottom: 25px; page-break-inside: avoid;">
-            <p style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">${e.description} — ${formatCurrency(e.amount)} (${e.date})</p>
+            <p style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">${e.description} — ${formatAmount(e.amount, e.currency)} (${e.date})</p>
             <img src="${e.receipt}" style="max-width: 100%; max-height: 600px; border: 1px solid #ddd; border-radius: 4px;" />
           </div>
         `).join('')}

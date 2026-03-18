@@ -66,9 +66,15 @@ export default function App() {
     setGenerating(false);
   };
 
-  const total = data.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-  const formatCurrency = (amt) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt);
+  const CURRENCY_SYMBOLS = { USD: '$', CAD: 'C$', CRC: '₡' };
+  const totals = data.expenses.reduce((acc, e) => {
+    const cur = e.currency || 'USD';
+    acc[cur] = (acc[cur] || 0) + Number(e.amount);
+    return acc;
+  }, {});
+  const totalDisplay = Object.keys(totals).length === 0
+    ? '$0.00'
+    : Object.entries(totals).map(([cur, amt]) => `${CURRENCY_SYMBOLS[cur] || '$'}${amt.toFixed(2)}`).join(' + ');
 
   if (loading) {
     return (
@@ -92,7 +98,7 @@ export default function App() {
           <div className="header-right">
             <div className="header-stat">
               <span className="stat-label">Total Claim</span>
-              <span className="stat-value">{formatCurrency(total)}</span>
+              <span className="stat-value">{totalDisplay}</span>
             </div>
             <button className="btn btn-secondary" onClick={save}>
               <Save size={16} /> {saved ? 'Saved!' : 'Save'}

@@ -1,5 +1,3 @@
-const STORAGE_KEY = 'costa-expense-data';
-
 const defaultData = {
   expenses: [],
   documents: [],
@@ -15,19 +13,28 @@ const defaultData = {
   },
 };
 
-export function loadData() {
+export async function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...defaultData };
-    const parsed = JSON.parse(raw);
-    return { ...defaultData, ...parsed, claimInfo: { ...defaultData.claimInfo, ...parsed.claimInfo } };
-  } catch {
+    const res = await fetch('/api/data');
+    if (!res.ok) throw new Error('Failed to load');
+    const data = await res.json();
+    return { ...defaultData, ...data, claimInfo: { ...defaultData.claimInfo, ...data.claimInfo } };
+  } catch (err) {
+    console.error('Load failed, using defaults:', err);
     return { ...defaultData };
   }
 }
 
-export function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export async function saveData(data) {
+  try {
+    await fetch('/api/data', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  } catch (err) {
+    console.error('Save failed:', err);
+  }
 }
 
 export function fileToBase64(file) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FileDown, Luggage, Save } from 'lucide-react';
 import ClaimInfo from './components/ClaimInfo';
 import ExpenseTracker from './components/ExpenseTracker';
@@ -15,11 +15,27 @@ const TABS = [
   { id: 'writeup', label: 'Write-Up' },
 ];
 
+const defaultData = {
+  expenses: [],
+  documents: [],
+  writeup: '',
+  claimInfo: {
+    airline: '', flightNumber: '', flightDate: '', bagTagNumbers: '',
+    referenceNumber: '', passengerNames: '', description: '',
+  },
+};
+
 export default function App() {
-  const [data, setData] = useState(loadData);
+  const [data, setData] = useState(defaultData);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('claim');
   const [saved, setSaved] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // Load data from server on mount
+  useEffect(() => {
+    loadData().then(d => { setData(d); setLoading(false); });
+  }, []);
 
   const save = useCallback(() => {
     saveData(data);
@@ -27,8 +43,10 @@ export default function App() {
     setTimeout(() => setSaved(false), 2000);
   }, [data]);
 
-  // Auto-save on changes
+  // Auto-save on changes (skip initial load)
+  const firstLoad = useRef(true);
   useEffect(() => {
+    if (firstLoad.current) { firstLoad.current = false; return; }
     const timer = setTimeout(() => saveData(data), 1000);
     return () => clearTimeout(timer);
   }, [data]);
@@ -51,6 +69,14 @@ export default function App() {
   const total = data.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
   const formatCurrency = (amt) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt);
+
+  if (loading) {
+    return (
+      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <p style={{ color: '#666', fontSize: '16px' }}>Loading your claim data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

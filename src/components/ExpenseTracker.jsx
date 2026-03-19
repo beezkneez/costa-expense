@@ -36,6 +36,21 @@ const emptyForm = {
   receiptName: '',
 };
 
+function openReceipt(dataUri) {
+  const w = window.open('', '_blank');
+  if (!w) return;
+  const isImage = dataUri.startsWith('data:image/');
+  const isPdf = dataUri.startsWith('data:application/pdf');
+  if (isImage) {
+    w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;background:#222"><img src="${dataUri}" style="max-width:100%;max-height:100vh;object-fit:contain"/></body></html>`);
+  } else if (isPdf) {
+    w.document.write(`<html><body style="margin:0"><iframe src="${dataUri}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
+  } else {
+    w.document.write(`<html><body style="margin:0"><iframe src="${dataUri}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
+  }
+  w.document.close();
+}
+
 export default function ExpenseTracker({ expenses, onChange }) {
   const [form, setForm] = useState({ ...emptyForm });
   const [editingId, setEditingId] = useState(null);
@@ -205,7 +220,7 @@ export default function ExpenseTracker({ expenses, onChange }) {
                       <span className="expense-amount">{formatAmount(e.amount, e.currency)}</span>
                       <div className="expense-card-actions">
                         {e.receipt && (
-                          <a href={e.receipt} target="_blank" rel="noreferrer" className="btn-sm">Receipt</a>
+                          <button className="btn-sm" onClick={() => openReceipt(e.receipt)}>Receipt</button>
                         )}
                         <button className="btn-icon" onClick={() => startEdit(e)} title="Edit">
                           <Pencil size={14} />

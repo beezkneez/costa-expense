@@ -61,7 +61,7 @@ export async function generatePdf(data) {
               <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f8f9fa'}; border-bottom: 1px solid #e0e0e0;">
                 <td style="padding: 10px 12px; font-size: 13px;">${e.date}</td>
                 <td style="padding: 10px 12px; font-size: 13px;">${e.category}</td>
-                <td style="padding: 10px 12px; font-size: 13px;">${e.description}</td>
+                <td style="padding: 10px 12px; font-size: 13px;">${e.description}${e.notes ? `<br/><span style="color: #666; font-size: 12px;">${e.notes}</span>` : ''}</td>
                 <td style="padding: 10px 12px; text-align: right; font-size: 13px;">${formatAmount(e.amount, e.currency)}</td>
               </tr>
             `).join('')}

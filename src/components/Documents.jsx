@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { FolderOpen, Upload, Trash2, FileText, Image } from 'lucide-react';
+import { FolderOpen, Upload, Trash2, FileText, Pencil, Check, X } from 'lucide-react';
 import { fileToBase64 } from '../utils/storage';
 
 export default function Documents({ documents, onChange }) {
   const [notes, setNotes] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
 
   const addFiles = async (files) => {
     const newDocs = [];
@@ -38,8 +40,20 @@ export default function Documents({ documents, onChange }) {
     onChange(documents.filter(d => d.id !== id));
   };
 
-  const updateDocName = (id, name) => {
-    onChange(documents.map(d => d.id === id ? { ...d, name } : d));
+  const startEdit = (doc) => {
+    setEditingId(doc.id);
+    setEditForm({ name: doc.name, notes: doc.notes || '' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+  };
+
+  const saveEdit = () => {
+    onChange(documents.map(d => d.id === editingId ? { ...d, name: editForm.name, notes: editForm.notes } : d));
+    setEditingId(null);
+    setEditForm(null);
   };
 
   const isImage = (type) => type && type.startsWith('image/');
@@ -79,18 +93,38 @@ export default function Documents({ documents, onChange }) {
                 )}
               </div>
               <div className="doc-info">
-                <input
-                  className="doc-name-input"
-                  value={d.name}
-                  onChange={e => updateDocName(d.id, e.target.value)}
-                />
-                {d.notes && <p className="doc-notes">{d.notes}</p>}
-                <div className="doc-actions">
-                  <a href={d.fileData} download={d.fileName} className="btn-sm">Download</a>
-                  <button className="btn-icon" onClick={() => removeDoc(d.id)} title="Remove">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                {editingId === d.id ? (
+                  <div className="doc-edit-form">
+                    <div className="form-group">
+                      <label>Name</label>
+                      <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                    </div>
+                    <div className="form-group" style={{ marginTop: '8px' }}>
+                      <label>Notes</label>
+                      <textarea rows={3} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Describe this document..." />
+                    </div>
+                    <div className="edit-actions">
+                      <button className="btn btn-primary btn-sm-action" onClick={saveEdit}><Check size={14} /> Save</button>
+                      <button className="btn btn-cancel btn-sm-action" onClick={cancelEdit}><X size={14} /> Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="doc-name">{d.name}</p>
+                    {d.notes && <p className="doc-notes">{d.notes}</p>}
+                    <div className="doc-actions">
+                      <a href={d.fileData} download={d.fileName} className="btn-sm">Download</a>
+                      <div className="doc-action-btns">
+                        <button className="btn-icon" onClick={() => startEdit(d)} title="Edit">
+                          <Pencil size={14} />
+                        </button>
+                        <button className="btn-icon" onClick={() => removeDoc(d.id)} title="Remove">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ))}

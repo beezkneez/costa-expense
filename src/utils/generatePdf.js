@@ -2,10 +2,35 @@ import html2pdf from 'html2pdf.js';
 import { format } from 'date-fns';
 
 const CURRENCY_SYMBOLS = { USD: '$', CAD: 'C$', CRC: '₡' };
+const MAX_IMG_WIDTH = 800;
+const MAX_IMG_HEIGHT = 800;
+const IMG_QUALITY = 0.6;
 
 function formatAmount(amount, currency = 'USD') {
   const symbol = CURRENCY_SYMBOLS[currency] || '$';
   return `${symbol}${Number(amount).toFixed(2)}`;
+}
+
+function compressImage(dataUrl) {
+  return new Promise((resolve) => {
+    if (!dataUrl) return resolve(dataUrl);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_IMG_WIDTH || height > MAX_IMG_HEIGHT) {
+        const ratio = Math.min(MAX_IMG_WIDTH / width, MAX_IMG_HEIGHT / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', IMG_QUALITY));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 export async function generatePdf(data) {
@@ -17,6 +42,16 @@ export async function generatePdf(data) {
   }, {});
   const totalLine = Object.entries(totals).map(([cur, amt]) => formatAmount(amt, cur)).join(' + ');
   const today = format(new Date(), 'MMMM d, yyyy');
+
+  // Compress all embedded images
+  for (const e of expenses) {
+    if (e.receipt) e.receipt = await compressImage(e.receipt);
+  }
+  for (const d of documents) {
+    if (d.fileData && d.fileType && d.fileType.startsWith('image/')) {
+      d.fileData = await compressImage(d.fileData);
+    }
+  }
 
   const html = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -107,8 +142,8 @@ export async function generatePdf(data) {
   const opt = {
     margin: [10, 10, 10, 10],
     filename: `baggage-claim-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true },
+    image: { type: 'jpeg', quality: 0.7 },
+    html2canvas: { scale: 1.5, useCORS: true },
     jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
   };

@@ -25,7 +25,7 @@ export async function generatePdf(data) {
         <p style="margin: 8px 0 0; color: #666; font-size: 14px;">Generated on ${today}</p>
       </div>
 
-      <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+      <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 30px; page-break-inside: avoid;">
         <h2 style="margin: 0 0 15px; font-size: 18px; color: #1e3a5f;">Claim Information</h2>
         <table style="width: 100%; border-collapse: collapse;">
           ${claimInfo.airline ? `<tr><td style="padding: 6px 12px 6px 0; font-weight: 600; width: 180px; vertical-align: top;">Airline:</td><td style="padding: 6px 0;">${claimInfo.airline}</td></tr>` : ''}
@@ -39,7 +39,7 @@ export async function generatePdf(data) {
       </div>
 
       ${writeup ? `
-      <div style="margin-bottom: 30px;">
+      <div style="margin-bottom: 30px; page-break-inside: avoid;">
         <h2 style="font-size: 18px; color: #1e3a5f; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px;">Statement / Write-Up</h2>
         <div style="white-space: pre-wrap; line-height: 1.7; font-size: 14px;">${writeup}</div>
       </div>
@@ -58,14 +58,14 @@ export async function generatePdf(data) {
           </thead>
           <tbody>
             ${expenses.map((e, i) => `
-              <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f8f9fa'}; border-bottom: 1px solid #e0e0e0;">
+              <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f8f9fa'}; border-bottom: 1px solid #e0e0e0; page-break-inside: avoid;">
                 <td style="padding: 10px 12px; font-size: 13px;">${e.date}</td>
                 <td style="padding: 10px 12px; font-size: 13px;">${e.category}</td>
                 <td style="padding: 10px 12px; font-size: 13px;">${e.description}${e.notes ? `<br/><span style="color: #666; font-size: 12px;">${e.notes}</span>` : ''}</td>
                 <td style="padding: 10px 12px; text-align: right; font-size: 13px;">${formatAmount(e.amount, e.currency)}</td>
               </tr>
             `).join('')}
-            <tr style="background: #1e3a5f; color: white; font-weight: 700;">
+            <tr style="background: #1e3a5f; color: white; font-weight: 700; page-break-inside: avoid;">
               <td colspan="3" style="padding: 12px; font-size: 14px;">TOTAL</td>
               <td style="padding: 12px; text-align: right; font-size: 14px;">${totalLine}</td>
             </tr>
@@ -110,7 +110,7 @@ export async function generatePdf(data) {
     image: { type: 'jpeg', quality: 0.95 },
     html2canvas: { scale: 2, useCORS: true },
     jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'] },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
   };
 
   await html2pdf().set(opt).from(container).save();
